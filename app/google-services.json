@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "122931487146",
+    "firebase_url": "https://pushmaskstocks.firebaseio.com",
+    "project_id": "pushmaskstocks",
+    "storage_bucket": "pushmaskstocks.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:122931487146:android:4e7e520ee7a1bf0ef54bd3",
+        "android_client_info": {
+          "package_name": "com.DevR.mask"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "122931487146-8vsgacs48es27ihf8k8p51i5ouhncsp7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbOhpZSRi6bJRfYRMzfiiO8ow1nooOFZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "122931487146-8vsgacs48es27ihf8k8p51i5ouhncsp7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
