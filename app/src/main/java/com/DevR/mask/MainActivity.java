@@ -8,14 +8,11 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -42,9 +39,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
-import static com.DevR.mask.MyWebViewClient.currentpage;
 import static java.sql.DriverManager.println;
 
 public class MainActivity extends AppCompatActivity {
@@ -209,40 +204,27 @@ public class MainActivity extends AppCompatActivity {
             mWebView.goBack();
             System.out.println("can go");
         } else {
-            //System.out.println("can not go");
-           // System.out.println(mWebView.getUrl() + "can not go" + firstURL);
-            /*
-            String nowURL = mWebView.getUrl() + "";
+            // 2. 다이얼로그를 생성한다.
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("종료하시겠습니까?");
+            builder.setMessage("'마스크 재판매 알리미'를 종료하셔도 마스크 알림은 계속 받으실 수 있습니다.");
+            builder.setNegativeButton("취소", null);
+            builder.setPositiveButton("종료", new DialogInterface.OnClickListener() {
 
-            if(firstURL==null){
-                if(blogurl==""){
-                    JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
-                    jsoupAsyncTask.execute();
-                }
-                else {
-                    mWebView.loadUrl(blogurl);
-                }
-            } else if (!firstURL.equals(nowURL)) {
-               // System.out.println("안같다");
-                mWebView.loadUrl(blogurl);
-            } else
-                */
-            //if (mWebView.getUrl().equals(firstURL) && interstitialAd.isLoaded()) {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    // 3. 다이얼로그의 긍정 이벤트일 경우 종료한다.
+                    finish();
 
-                if (interstitialAd.isLoaded()) {
-              //  System.out.println("아니다");*/
-                interstitialAd.show();
-                interstitialAd.setAdListener(new AdListener() {
-                    @Override
-                    public void onAdClosed() {
-                        // 사용자가 광고를 닫으면 뒤로가기 이벤트를 발생시킨다.
-                        finish();
-                    }
-                });
-            } else {
-                super.onBackPressed();
-            }
+                }
+            });
+            builder.show();
         }
+
+
+        //super.onBackPressed();
+
+
 
     }
 
@@ -260,6 +242,57 @@ public class MainActivity extends AppCompatActivity {
 
     public void reflash(View view) {
         mWebView.reload();
+    }
+
+    public void home(View view) {
+
+        if (interstitialAd.isLoaded()) {
+            //  System.out.println("아니다");*/
+            interstitialAd.show();
+            interstitialAd.setAdListener(new AdListener() {
+                @Override
+                public void onAdClosed() {
+                    // 사용자가 광고를 닫으면 뒤로가기 이벤트를 발생시킨다.
+                    System.out.println("전면광고 로드");
+                    interstitialAd.loadAd(new AdRequest.Builder().build());
+                    while(true) {
+                        if(mWebView.canGoBack()){
+                            System.out.println("\ngoback=========="+blogurl);
+                            mWebView.goBack();
+                        }else{
+                            System.out.println("\nelse진입=========="+blogurl);
+                            System.out.println("blogurl="+blogurl);
+                            if(blogurl.equals("")){
+                                JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
+                                jsoupAsyncTask.execute();
+                            }
+                            break;
+                        }
+                    }
+
+
+                }
+            });
+        }else{
+
+            while(true) {
+                if (mWebView.canGoBack()) {
+                    System.out.println("\ngoback==========" + blogurl);
+                    mWebView.goBack();
+                } else {
+                    System.out.println("\nelse진입==========" + blogurl);
+                    System.out.println("blogurl=" + blogurl);
+                    if (blogurl.equals("")) {
+                        JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
+                        jsoupAsyncTask.execute();
+                    }
+                    break;
+                }
+            }
+
+
+        }
+
     }
 
 

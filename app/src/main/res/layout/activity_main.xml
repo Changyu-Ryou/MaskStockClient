@@ -11,38 +11,64 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            >
             <WebView
                 android:layout_weight="1"
                 android:id="@+id/webView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_above="@+id/adView" />
+                android:layout_above="@id/adView" />
 
-        <com.google.android.gms.ads.AdView
-            xmlns:ads="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/adView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:layout_alignParentBottom="true"
-            ads:adSize="BANNER"
-            ads:adUnitId="ca-app-pub-7742126992195898/3504092909">
-        </com.google.android.gms.ads.AdView>
 
         <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_marginBottom="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_below="@id/webView"
             android:layout_toRightOf="@id/adView"
             android:src="@drawable/renew"
             android:onClick="reflash"
             android:padding="0dp"
-            android:background="#ffffff"
+
             android:scaleType="centerInside"
             tools:ignore="NotSibling" />
-        </RelativeLayout>
 
+
+            <ImageButton
+                android:layout_gravity="bottom|left"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="5dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_below="@id/webView"
+                android:layout_toRightOf="@id/adView"
+                android:src="@drawable/homebtn"
+                android:onClick="home"
+                android:padding="0dp"
+
+                android:scaleType="centerInside"
+                tools:ignore="NotSibling" />
+
+
+        </FrameLayout>
+
+    <com.google.android.gms.ads.AdView
+        xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/adView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        ads:adSize="BANNER"
+        ads:adUnitId="ca-app-pub-7742126992195898/3504092909">
+    </com.google.android.gms.ads.AdView>
+
+    </RelativeLayout>
 
 
 
