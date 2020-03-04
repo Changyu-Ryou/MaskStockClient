@@ -6,35 +6,44 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+            <WebView
+                android:layout_weight="1"
+                android:id="@+id/webView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_above="@+id/adView" />
+
+        <com.google.android.gms.ads.AdView
+            xmlns:ads="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/adView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            ads:adSize="BANNER"
+            ads:adUnitId="ca-app-pub-7742126992195898/3504092909">
+        </com.google.android.gms.ads.AdView>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/webView"
+            android:layout_toRightOf="@id/adView"
+            android:src="@drawable/renew"
+            android:onClick="reflash"
+            android:padding="0dp"
+            android:background="#ffffff"
+            android:scaleType="centerInside"
+            tools:ignore="NotSibling" />
+        </RelativeLayout>
 
 
-    <Button
-        android:layout_below="@id/text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/btn"
-        android:onClick="btn"
-        android:text="close"/>
 
-        <WebView
-            android:id="@+id/webView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/btn"/>
-
-    </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
