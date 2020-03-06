@@ -5,18 +5,25 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
@@ -53,6 +60,10 @@ public class MainActivity extends AppCompatActivity {
     //static String body=MyFirebaseMessagingService.body;
     //static Map<String, String> data=MyFirebaseMessagingService.data;
     private FirebaseAnalytics mFirebaseAnalytics;
+
+    ImageButton refreshBtn;
+    ImageButton homeBtn;
+
     Intent intent;
     String blogurl = "";
     private AdView mAdView;     //하단배너광고
@@ -60,12 +71,25 @@ public class MainActivity extends AppCompatActivity {
     static SwipeRefreshLayout swipe;       //swipe reload
     //SwipeRefreshLayout mySwipeRefreshLayout;
     private InterstitialAd interstitialAd;
+    private InterstitialAd minterstitialAd;
+    private int nBefore = 0;                //새로고침 버튼
+
+    public ProgressDialog progressDialog;
+    public static ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        homeBtn= (ImageButton) findViewById(R.id.home);
+        refreshBtn = (ImageButton) findViewById(R.id.renew);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar1);
+        progressBar.setVisibility(View.GONE);
+        progressBar.bringToFront();
+
+        homeBtn.bringToFront();
+        refreshBtn.bringToFront();
 
         context = this;
         String id = "id";
@@ -83,8 +107,7 @@ public class MainActivity extends AppCompatActivity {
         mAdView.loadAd(adRequest);
 
 
-        // 전면광고 초기화
-
+        // 전면광고 초기화 홈버튼
         interstitialAd = new InterstitialAd(context);
         interstitialAd.setAdUnitId("ca-app-pub-7742126992195898/9239118392"); // * 자신의 전면광고 단위 아이디
         interstitialAd.loadAd(new AdRequest.Builder().build());
@@ -97,6 +120,21 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+        // 종료 직전 광고 초기화 홈버튼
+        minterstitialAd = new InterstitialAd(context);
+        minterstitialAd.setAdUnitId("ca-app-pub-7742126992195898/8390454040"); // * 자신의 전면광고 단위 아이디
+        minterstitialAd.loadAd(new AdRequest.Builder().build());
+
+        minterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdClosed() {
+                // Load the next interstitial.
+                minterstitialAd.loadAd(new AdRequest.Builder().build());
+            }
+
+        });
+
 
         // 토큰이 등록되는 시점에 호출되는 메소드 입니다.
         FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(this,
@@ -157,8 +195,16 @@ public class MainActivity extends AppCompatActivity {
 
         MyWebViewClient testChromeClient = new MyWebViewClient();
         mWebView.setWebViewClient(testChromeClient);
-        mWebView.setWebChromeClient(new WebChromeClient());//웹뷰에 크롬 사용 허용//이 부분이 없으면 크롬에서 alert가 뜨지 않음
+        //mWebView.setWebChromeClient(new WebChromeClient());//웹뷰에 크롬 사용 허용//이 부분이 없으면 크롬에서 alert가 뜨지 않음
+        mWebView.setWebChromeClient(new WebChromeClient());
+
+
         // mWebView.setWebViewClient(new WebViewClientClass());//새창열기 없이 웹뷰 내에서 다시 열기//페이지 이동 원활히 하기위해 사용
+
+
+        ////////////////////////////https://play.app.goo.gl/?link=https://play.google.com/store/apps/details?id=com.DevR.mask&ddl=1&pcampaignid=web_ddl_1
+        ////////인텐트링크
+
 
         mWebView.setWebChromeClient(new WebChromeClient() {         //웹뷰 내 팝업창 구현
             @Override
@@ -192,7 +238,41 @@ public class MainActivity extends AppCompatActivity {
 
         firstURL = mWebView.getUrl();
         currentPageUrl = "firstpage";
+
+
+
+
+
+
+
+
+
     }
+
+    public void loading() {
+        //로딩
+        new android.os.Handler().postDelayed(
+                new Runnable() {
+                    public void run() {
+                        progressDialog = new ProgressDialog(MainActivity.this);
+                        progressDialog.setIndeterminate(true);
+                        progressDialog.setMessage("잠시만 기다려 주세요");
+                        progressDialog.show();
+                    }
+                }, 100);
+    }
+
+    public void loadingEnd() {
+        new android.os.Handler().postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        progressDialog.dismiss();
+                    }
+                }, 0);
+    }
+
+
 
 
     @Override
@@ -203,8 +283,63 @@ public class MainActivity extends AppCompatActivity {
             currentPageUrl = mWebView.getUrl();
             mWebView.goBack();
             System.out.println("can go");
-        } else {
+        } else {                                        //앱 종료시
             // 2. 다이얼로그를 생성한다.
+
+
+
+
+            if (minterstitialAd.isLoaded()) {
+
+                final Handler mHandler = new Handler() {            // 실행이 끝난후 확인 가능
+                    public void handleMessage(Message msg) {
+                       System.out.println("위에 \n");
+                        loadingEnd();
+                        minterstitialAd.show();
+                    }
+                };
+
+                new Handler().postDelayed(new Runnable() {// 1 초 후에 실행
+                    @Override
+                    public void run() {
+                        // 실행할 동작 코딩
+                        loading();
+                        System.out.println("아래에 \n");
+                        Message message = new Message();
+                        message.what = 0;
+                        mHandler.sendMessageDelayed(message,600);	// 실행이 끝난후 알림
+                    }
+                }, 0);
+
+                //로딩progress
+                //  System.out.println("아니다");*/
+                //minterstitialAd.show();
+                minterstitialAd.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdClosed() {
+                        //loadingEnd();
+                        // 사용자가 광고를 닫으면 뒤로가기 이벤트를 발생시킨다.
+                        System.out.println("전면광고 로드");
+                        minterstitialAd.loadAd(new AdRequest.Builder().build());
+                        while (true) {
+                            if (mWebView.canGoBack()) {
+                                System.out.println("\ngoback==========" + blogurl);
+                                mWebView.goBack();
+                            } else {
+                                System.out.println("\nelse진입==========" + blogurl);
+                                System.out.println("blogurl=" + blogurl);
+                                if (blogurl.equals("")) {
+                                    JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
+                                    jsoupAsyncTask.execute();
+                                }
+                                break;
+                            }
+                        }
+
+
+                    }
+                });
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("종료하시겠습니까?");
             builder.setMessage("'마스크 재판매 알리미'를 종료하셔도 마스크 알림은 계속 받으실 수 있습니다.");
@@ -225,7 +360,6 @@ public class MainActivity extends AppCompatActivity {
         //super.onBackPressed();
 
 
-
     }
 
 /*
@@ -241,14 +375,48 @@ public class MainActivity extends AppCompatActivity {
     }*/
 
     public void reflash(View view) {
+        reflashRotation(nBefore - 360);
         mWebView.reload();
     }
-
+    public void reflashRotation(int i) {
+        RotateAnimation ra = new RotateAnimation(
+                nBefore,
+                i,
+                Animation.RELATIVE_TO_SELF, 0.5f,
+                Animation.RELATIVE_TO_SELF, 0.5f
+        );
+        ra.setDuration(250);
+        ra.setFillAfter(true);
+        refreshBtn.startAnimation(ra);
+        nBefore = i;
+    }
     public void home(View view) {
 
         if (interstitialAd.isLoaded()) {
+
+            final Handler mHandler = new Handler() {            // 실행이 끝난후 확인 가능
+                public void handleMessage(Message msg) {
+                    System.out.println("위에 \n");
+                    loadingEnd();
+                    interstitialAd.show();
+                }
+            };
+
+            new Handler().postDelayed(new Runnable() {// 1 초 후에 실행
+                @Override
+                public void run() {
+                    // 실행할 동작 코딩
+                    loading();
+                    System.out.println("아래에 \n");
+                    Message message = new Message();
+                    message.what = 0;
+                    mHandler.sendMessageDelayed(message,500);	// 실행이 끝난후 알림
+                }
+            }, 0);
+
+
             //  System.out.println("아니다");*/
-            interstitialAd.show();
+            //interstitialAd.show();
             interstitialAd.setAdListener(new AdListener() {
                 @Override
                 public void onAdClosed() {
@@ -292,6 +460,8 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
+
+
 
     }
 

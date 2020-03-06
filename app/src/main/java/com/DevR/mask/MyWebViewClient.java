@@ -1,7 +1,9 @@
 package com.DevR.mask;
 
+import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.view.View;
 import android.webkit.WebView;
@@ -16,6 +18,11 @@ public class MyWebViewClient extends WebViewClient {
     public static String currentpage="";
     public static View myView;
     public static String mviewURL="";
+
+    @Override
+    public void onPageStarted(WebView view, String url, Bitmap favicon){
+        MainActivity.progressBar.setVisibility(View.VISIBLE);
+    }
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String uri) {
@@ -64,6 +71,7 @@ public class MyWebViewClient extends WebViewClient {
         }
         currentpage=view.getUrl();
 
+        MainActivity.progressBar.setVisibility(View.GONE);
 
        /* String mainlink=MainActivity.firstURL;
         System.out.println("view.getUrl()="+view.getUrl()+"\n");

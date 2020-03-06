@@ -7,6 +7,71 @@
     tools:context=".MainActivity">
 
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <ProgressBar
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:id="@+id/progressBar1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+
+            />
+        <WebView
+            android:layout_weight="1"
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/adView" />
+
+        <com.google.android.gms.ads.AdView
+            xmlns:ads="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/adView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            ads:adSize="BANNER"
+            ads:adUnitId="ca-app-pub-7742126992195898/3504092909">
+        </com.google.android.gms.ads.AdView>
+
+        <ImageButton
+            android:id="@+id/renew"
+            android:layout_gravity="end"
+            android:layout_marginBottom="5dp"
+            android:layout_marginEnd="3dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+
+            android:src="@drawable/renew"
+            android:onClick="reflash"
+            android:padding="0dp"
+
+            android:scaleType="centerInside"
+            tools:ignore="NotSibling"  />
+
+
+        <ImageButton
+            android:id="@+id/home"
+            android:layout_gravity="bottom|start"
+            android:layout_marginBottom="5dp"
+            android:layout_marginStart="4dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:src="@drawable/hombtn"
+            android:onClick="home"
+            android:padding="0dp"
+
+            android:scaleType="centerInside"
+            tools:ignore="NotSibling" />
+    </RelativeLayout>
+<!--
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -47,7 +112,7 @@
                 android:layout_height="40dp"
                 android:layout_below="@id/webView"
                 android:layout_toRightOf="@id/adView"
-                android:src="@drawable/homebtn"
+                android:src="@drawable/homeBtn"
                 android:onClick="home"
                 android:padding="0dp"
 
@@ -70,6 +135,6 @@
 
     </RelativeLayout>
 
-
+-->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
