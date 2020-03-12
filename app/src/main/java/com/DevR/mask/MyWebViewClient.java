@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.view.View;
+import android.webkit.GeolocationPermissions;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -70,7 +71,7 @@ public class MyWebViewClient extends WebViewClient {
             MainActivity.firstURL=view.getUrl();
         }
         currentpage=view.getUrl();
-
+        System.out.println("currentpage="+currentpage+"\n");
         MainActivity.progressBar.setVisibility(View.GONE);
 
        /* String mainlink=MainActivity.firstURL;

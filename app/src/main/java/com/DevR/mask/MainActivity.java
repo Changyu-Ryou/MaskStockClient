@@ -3,12 +3,16 @@ package com.DevR.mask;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,6 +22,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
+import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -76,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
 
     public ProgressDialog progressDialog;
     public static ProgressBar progressBar;
+    private static final int MY_PERMISSION_REQUEST_LOCATION = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,18 +192,26 @@ public class MainActivity extends AppCompatActivity {
         mWebSettings.setJavaScriptEnabled(true); // 웹페이지 자바스크립트 허용 여부
         // mWebSettings.setSupportMultipleWindows(false); // 새창 띄우기 허용 여부
         //  mWebSettings.setJavaScriptCanOpenWindowsAutomatically(true); // 자바스크립트 새창 띄우기(멀티뷰) 허용 여부
-        //mWebSettings.setLoadWithOverviewMode(true); // 메타태그 허용 여부
+        mWebSettings.setLoadWithOverviewMode(true); // 메타태그 허용 여부
         // mWebSettings.setUseWideViewPort(true); // 화면 사이즈 맞추기 허용 여부
         //mWebSettings.setSupportZoom(false); // 화면 줌 허용 여부
         //mWebSettings.setBuiltInZoomControls(false); // 화면 확대 축소 허용 여부
         //mWebSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN); // 컨텐츠 사이즈 맞추기
-        mWebSettings.setCacheMode(WebSettings.LOAD_NO_CACHE); // 브라우저 캐시 허용 여부  네트워크로 받아옴
-        //mWebSettings.setDomStorageEnabled(true); // 로컬저장소 허용 여부
+        mWebSettings.setCacheMode(WebSettings.LOAD_DEFAULT); // 브라우저 캐시 허용 여부  네트워크로 받아옴
+        mWebSettings.setGeolocationEnabled(true);
+        mWebSettings.setDomStorageEnabled(true); // 로컬저장소 허용 여부
 
         MyWebViewClient testChromeClient = new MyWebViewClient();
         mWebView.setWebViewClient(testChromeClient);
         //mWebView.setWebChromeClient(new WebChromeClient());//웹뷰에 크롬 사용 허용//이 부분이 없으면 크롬에서 alert가 뜨지 않음
-        mWebView.setWebChromeClient(new WebChromeClient());
+        mWebView.setWebChromeClient(new WebChromeClient(){
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback)
+            {
+                super.onGeolocationPermissionsShowPrompt(origin, callback);
+                callback.invoke(origin, true, false);
+            }
+        });
 
 
         // mWebView.setWebViewClient(new WebViewClientClass());//새창열기 없이 웹뷰 내에서 다시 열기//페이지 이동 원활히 하기위해 사용
@@ -223,6 +238,12 @@ public class MainActivity extends AppCompatActivity {
                         .show();
                 return true;
             }
+
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                callback.invoke(origin, true, false);
+            }
+
         });
         System.out.println("url main=" + intent.getStringExtra("url"));
 
@@ -231,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
             //mWebView.loadUrl("http://www.naver.net"); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
             jsoupAsyncTask.execute();
-            //mWebView.loadUrl(blogurl); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
+            mWebView.loadUrl(blogurl); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
         } else
             mWebView.loadUrl(intent.getStringExtra("url"));
 
@@ -240,14 +261,25 @@ public class MainActivity extends AppCompatActivity {
         currentPageUrl = "firstpage";
 
 
-
-
-
-
-
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            //권한이 없을 경우 최초 권한 요청 또는 사용자에 의한 재요청 확인
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                // 권한 재요청
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+                return;
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+                return;
+            }
+        }
 
 
     }
+
+
+
 
     public void loading() {
         //로딩
@@ -450,10 +482,12 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     System.out.println("\nelse진입==========" + blogurl);
                     System.out.println("blogurl=" + blogurl);
+
                     if (blogurl.equals("")) {
                         JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                         jsoupAsyncTask.execute();
                     }
+                    mWebView.loadUrl(blogurl);
                     break;
                 }
             }
