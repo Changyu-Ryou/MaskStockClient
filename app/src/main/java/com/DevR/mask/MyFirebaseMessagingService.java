@@ -71,7 +71,11 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtra("body", messageBody);
         intent.putExtra("contents", messageBody+"11");
         PendingIntent pendingIntent = PendingIntent.getActivity(this, (int)(System.currentTimeMillis()/1000), intent, PendingIntent.FLAG_ONE_SHOT);
-        String channelId = "/topics/ALL";
+
+        String channelId;
+        channelId = "/topics/ALL";
+
+
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, channelId)
@@ -83,7 +87,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         .setContentIntent(pendingIntent);
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            String channelName = "/topics/ALL";
+            String channelName;
+            channelName = "/topics/ALL";
+
+            System.out.println("channelName ="+channelName);
             NotificationChannel channel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(channel);
         }

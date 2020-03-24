@@ -9,18 +9,25 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.animation.RotateAnimation;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
@@ -29,6 +36,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
@@ -51,11 +60,16 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static java.sql.DriverManager.println;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int DEFAULT_VALUE_INT = -1;
     static String currentPageUrl = "";
     static String firstURL = "";
     static WebView mWebView; // 웹뷰 선언
@@ -66,8 +80,18 @@ public class MainActivity extends AppCompatActivity {
     //static Map<String, String> data=MyFirebaseMessagingService.data;
     private FirebaseAnalytics mFirebaseAnalytics;
 
+    private static final IntentFilter s_intentFilter; //시간변화감지용
+
+    RelativeLayout setlay;
+    RelativeLayout homelay;
+
     ImageButton refreshBtn;
     ImageButton homeBtn;
+    ImageButton setBtn;
+    ImageButton boxBtn;
+
+    static int subscribe = 0;        //fcm 구독값 0==all, 1==구독x
+    String rewordtime="";
 
     Intent intent;
     String blogurl = "";
@@ -89,7 +113,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        homeBtn= (ImageButton) findViewById(R.id.home);
+        setlay = (RelativeLayout) findViewById(R.id.setlayout);
+        homelay = (RelativeLayout) findViewById(R.id.homelayout);
+
+        setBtn = (ImageButton) findViewById(R.id.setting);
+        boxBtn = (ImageButton) findViewById(R.id.box);
+        homeBtn = (ImageButton) findViewById(R.id.home);
         refreshBtn = (ImageButton) findViewById(R.id.renew);
         progressBar = (ProgressBar) findViewById(R.id.progressBar1);
         progressBar.setVisibility(View.GONE);
@@ -110,13 +139,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         mAdView = findViewById(R.id.adView);
+        //AdRequest adRequest = new AdRequest.Builder().addTestDevice("EEA172A68DC419954C6AB203C2B2B3B4").build();        //갤럭시 테스트 기기 등록
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
 
-
         // 전면광고 초기화 홈버튼
         interstitialAd = new InterstitialAd(context);
-        interstitialAd.setAdUnitId("ca-app-pub-7742126992195898/9239118392"); // * 자신의 전면광고 단위 아이디
+        interstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712"); // * 자신의 전면광고 단위 아이디
         interstitialAd.loadAd(new AdRequest.Builder().build());
 
         interstitialAd.setAdListener(new AdListener() {
@@ -130,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 종료 직전 광고 초기화 홈버튼
         minterstitialAd = new InterstitialAd(context);
-        minterstitialAd.setAdUnitId("ca-app-pub-7742126992195898/8390454040"); // * 자신의 전면광고 단위 아이디
+        minterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712"); // * 자신의 전면광고 단위 아이디
         minterstitialAd.loadAd(new AdRequest.Builder().build());
 
         minterstitialAd.setAdListener(new AdListener() {
@@ -141,6 +170,10 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+
+
+        subscribe = 0;
+        getPreferences();       //저장된 구독 값 알아오기
 
 
         // 토큰이 등록되는 시점에 호출되는 메소드 입니다.
@@ -180,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
         //이렇게 ALL 추가 하면 이 디바이스는 ALL을 구독한다는 얘기가 된다.
         FirebaseMessaging.getInstance().subscribeToTopic("ALL");
 
+
         /// createNotification("현재 마스크 재고 알림이 작동중입니다.");
         //notifon();
 
@@ -204,10 +238,9 @@ public class MainActivity extends AppCompatActivity {
         MyWebViewClient testChromeClient = new MyWebViewClient();
         mWebView.setWebViewClient(testChromeClient);
         //mWebView.setWebChromeClient(new WebChromeClient());//웹뷰에 크롬 사용 허용//이 부분이 없으면 크롬에서 alert가 뜨지 않음
-        mWebView.setWebChromeClient(new WebChromeClient(){
+        mWebView.setWebChromeClient(new WebChromeClient() {
             @Override
-            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback)
-            {
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
                 super.onGeolocationPermissionsShowPrompt(origin, callback);
                 callback.invoke(origin, true, false);
             }
@@ -252,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
             //mWebView.loadUrl("http://www.naver.net"); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
             JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
             jsoupAsyncTask.execute();
-            mWebView.loadUrl(blogurl); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
+            mWebView.loadUrl("https://www.mask-alarm.pe.kr"); // 웹뷰에 표시할 웹사이트 주소, 웹뷰 시작
         } else
             mWebView.loadUrl(intent.getStringExtra("url"));
 
@@ -275,10 +308,81 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        getPreferences();
+        registerReceiver(m_timeChangedReceiver, s_intentFilter);
+    }
+
+    //////시간 변화 감지
+    static {
+        s_intentFilter = new IntentFilter();
+        s_intentFilter.addAction(Intent.ACTION_TIME_TICK);
+        s_intentFilter.addAction(Intent.ACTION_TIMEZONE_CHANGED);
+        s_intentFilter.addAction(Intent.ACTION_TIME_CHANGED);
+    }
+
+
+    private final BroadcastReceiver m_timeChangedReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // sendPostToFCM();
+            chekcTime();            //시간 확인용
+        }
+    };
+
+
+    void chekcTime() {
+
+        long now = System.currentTimeMillis();
+        Date dateNow = new Date(now);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+        try {
+            Date dateCreated = dateFormat.parse(rewordtime); //String을 포맷에 맞게 변경
+            long duration = dateNow.getTime() - dateCreated.getTime(); // 글이 올라온시간,현재시간비교
+            long min = duration / 60000;
+
+            if (min >= 3) { // 5분이상 지났을때
+                System.out.println("20분이 지났습니다."+min);
+                mAdView.setVisibility(View.VISIBLE);
+
+            } else {
+                System.out.println("20분이 지나지 않았습니다."+min);
+                mAdView.setVisibility(View.GONE);
+            }
+
+        } catch (ParseException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
 
     }
 
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        savePreferences(rewordtime);
+
+    }
+
+
+    // 리워드 시간 불러오기
+    private void getPreferences() {
+        SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
+        rewordtime = pref.getString("time", "0");
+        if(!rewordtime.equals("0")){
+            chekcTime();
+        }
+    }
+
+    // 값 저장하기
+    private void savePreferences(String a) {
+        SharedPreferences pref = getSharedPreferences("pref", MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("time", a);
+        editor.commit();
+    }
 
 
     public void loading() {
@@ -305,8 +409,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-
     @Override
     public void onBackPressed() {
         // 혹시 웹 뷰를 사용하는 액티비티일 경우 웹뷰 뒤로가기를 구현해준다.
@@ -315,17 +417,14 @@ public class MainActivity extends AppCompatActivity {
             currentPageUrl = mWebView.getUrl();
             mWebView.goBack();
             System.out.println("can go");
-        } else {                                        //앱 종료시
-            // 2. 다이얼로그를 생성한다.
-
-
-
-
+            System.out.println(mWebView.getUrl());
+        } else if (mWebView.getUrl().equals("https://www.mask-alarm.pe.kr/") || mWebView.getUrl().equals("http://mask-alarm.pe.kr/index.html")
+                || mWebView.getUrl().equals("https://www.mask-alarm.pe.kr/index.html") || mWebView.getUrl().equals("https://mask-alarm.pe.kr/")) {
             if (minterstitialAd.isLoaded()) {
 
                 final Handler mHandler = new Handler() {            // 실행이 끝난후 확인 가능
                     public void handleMessage(Message msg) {
-                       System.out.println("위에 \n");
+                        System.out.println("위에 \n");
                         loadingEnd();
                         minterstitialAd.show();
                     }
@@ -339,7 +438,72 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("아래에 \n");
                         Message message = new Message();
                         message.what = 0;
-                        mHandler.sendMessageDelayed(message,600);	// 실행이 끝난후 알림
+                        mHandler.sendMessageDelayed(message, 600);    // 실행이 끝난후 알림
+                    }
+                }, 0);
+
+                //로딩progress
+                //  System.out.println("아니다");*/
+                //minterstitialAd.show();
+                minterstitialAd.setAdListener(new AdListener() {
+                    @Override
+                    public void onAdClosed() {
+                        //loadingEnd();
+                        // 사용자가 광고를 닫으면 뒤로가기 이벤트를 발생시킨다.
+                        System.out.println("전면광고 로드");
+                        minterstitialAd.loadAd(new AdRequest.Builder().build());
+                        while (true) {
+                            if (mWebView.canGoBack()) {
+                                System.out.println("\ngoback==========" + blogurl);
+                                mWebView.goBack();
+                            } else {
+                                System.out.println("\nelse진입==========" + blogurl);
+                                System.out.println("blogurl=" + blogurl);
+                                if (blogurl.equals("")) {
+                                    JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
+                                    jsoupAsyncTask.execute();
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when the ad is displayed.
+                        quitdialog();
+                    }
+
+                });
+            } else {
+
+                quitdialog();
+
+            }
+
+
+        } else {                                        //앱 종료시
+            // 2. 다이얼로그를 생성한다.
+
+            if (minterstitialAd.isLoaded()) {
+
+                final Handler mHandler = new Handler() {            // 실행이 끝난후 확인 가능
+                    public void handleMessage(Message msg) {
+                        System.out.println("위에 \n");
+                        loadingEnd();
+                        minterstitialAd.show();
+                    }
+                };
+
+                new Handler().postDelayed(new Runnable() {// 1 초 후에 실행
+                    @Override
+                    public void run() {
+                        // 실행할 동작 코딩
+                        loading();
+                        System.out.println("아래에 \n");
+                        Message message = new Message();
+                        message.what = 0;
+                        mHandler.sendMessageDelayed(message, 600);    // 실행이 끝난후 알림
                     }
                 }, 0);
 
@@ -370,27 +534,45 @@ public class MainActivity extends AppCompatActivity {
 
 
                     }
+
+                    @Override
+                    public void onAdOpened() {
+                        // Code to be executed when the ad is displayed.
+                        quitdialog();
+                    }
+
+
                 });
+            } else {
+                quitdialog();
             }
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("종료하시겠습니까?");
-            builder.setMessage("'마스크 재판매 알리미'를 종료하셔도 마스크 알림은 계속 받으실 수 있습니다.");
-            builder.setNegativeButton("취소", null);
-            builder.setPositiveButton("종료", new DialogInterface.OnClickListener() {
-
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    // 3. 다이얼로그의 긍정 이벤트일 경우 종료한다.
-                    finish();
-
-                }
-            });
-            builder.show();
         }
 
 
         //super.onBackPressed();
 
+
+    }
+
+
+    void quitdialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("종료하시겠습니까?");
+        builder.setMessage("'마스크 재판매 알리미'를 종료하셔도 마스크 알림은 계속 받으실 수 있습니다.");
+        builder.setNegativeButton("취소", null);
+        builder.setPositiveButton("종료", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // 3. 다이얼로그의 긍정 이벤트일 경우 종료한다.
+                finishAffinity();
+                System.runFinalization();
+                System.exit(0);
+
+
+            }
+        });
+        builder.show();
 
     }
 
@@ -407,9 +589,14 @@ public class MainActivity extends AppCompatActivity {
     }*/
 
     public void reflash(View view) {
+        if (setlay.getVisibility() == View.VISIBLE) {
+            closewallet();
+        }
+
         reflashRotation(nBefore - 360);
         mWebView.reload();
     }
+
     public void reflashRotation(int i) {
         RotateAnimation ra = new RotateAnimation(
                 nBefore,
@@ -422,7 +609,18 @@ public class MainActivity extends AppCompatActivity {
         refreshBtn.startAnimation(ra);
         nBefore = i;
     }
+
     public void home(View view) {
+
+        /*
+        Animation anim = AnimationUtils.loadAnimation
+                (getApplicationContext(), // 현재화면의 제어권자
+                        R.anim.translate_anim);   // 에니메이션 설정 파일
+        iv.startAnimation(anim);
+
+        */
+
+        closewallet();
 
         if (interstitialAd.isLoaded()) {
 
@@ -442,7 +640,7 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("아래에 \n");
                     Message message = new Message();
                     message.what = 0;
-                    mHandler.sendMessageDelayed(message,500);	// 실행이 끝난후 알림
+                    mHandler.sendMessageDelayed(message, 500);    // 실행이 끝난후 알림
                 }
             }, 0);
 
@@ -455,14 +653,14 @@ public class MainActivity extends AppCompatActivity {
                     // 사용자가 광고를 닫으면 뒤로가기 이벤트를 발생시킨다.
                     System.out.println("전면광고 로드");
                     interstitialAd.loadAd(new AdRequest.Builder().build());
-                    while(true) {
-                        if(mWebView.canGoBack()){
-                            System.out.println("\ngoback=========="+blogurl);
+                    while (true) {
+                        if (mWebView.canGoBack()) {
+                            System.out.println("\ngoback==========" + blogurl);
                             mWebView.goBack();
-                        }else{
-                            System.out.println("\nelse진입=========="+blogurl);
-                            System.out.println("blogurl="+blogurl);
-                            if(blogurl.equals("")){
+                        } else {
+                            System.out.println("\nelse진입==========" + blogurl);
+                            System.out.println("blogurl=" + blogurl);
+                            if (blogurl.equals("")) {
                                 JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
                                 jsoupAsyncTask.execute();
                             }
@@ -473,30 +671,138 @@ public class MainActivity extends AppCompatActivity {
 
                 }
             });
-        }else{
+        } else {
+            mWebView.loadUrl("https://www.mask-alarm.pe.kr");
+        }
 
-            while(true) {
-                if (mWebView.canGoBack()) {
-                    System.out.println("\ngoback==========" + blogurl);
-                    mWebView.goBack();
-                } else {
-                    System.out.println("\nelse진입==========" + blogurl);
-                    System.out.println("blogurl=" + blogurl);
+    }
 
-                    if (blogurl.equals("")) {
-                        JsoupAsyncTask jsoupAsyncTask = new JsoupAsyncTask();
-                        jsoupAsyncTask.execute();
+
+    public void box(View view) {
+
+        if (setlay.getVisibility() != View.VISIBLE) {
+            openwallet();
+        } else {
+            closewallet();
+        }
+
+    }
+
+    void openwallet() {
+        boxBtn.setImageResource(R.drawable.closebtn);
+        Animation anim = AnimationUtils.loadAnimation
+                (getApplicationContext(), // 현재화면의 제어권자
+                        R.anim.translate_anim);   // 에니메이션 설정 파일
+        homelay.setVisibility(View.VISIBLE);
+        homelay.startAnimation(anim);
+        setlay.setVisibility(View.VISIBLE);
+        setlay.startAnimation(anim);
+
+
+    }
+
+    void closewallet() {
+        boxBtn.setImageResource(R.drawable.boxbtn);
+        Animation anim = AnimationUtils.loadAnimation
+                (getApplicationContext(), // 현재화면의 제어권자
+                        R.anim.traslate_close);   // 에니메이션 설정 파일
+        setlay.startAnimation(anim);
+        setlay.setVisibility(View.INVISIBLE);
+        homelay.startAnimation(anim);
+        homelay.setVisibility(View.INVISIBLE);
+
+    }
+
+    private void deleteDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("광고 제거");
+        builder.setMessage("광고를 보시면 하단 배너를 1시간동안 없애드립니다. 광고를 보시겠습니까?");
+        builder.setNegativeButton("예",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        //예 눌렀을때의 이벤트 처리
+                        mAdView.setVisibility(View.GONE);
+
+                        rewordTime();           //리워드 받은 시간 저장
+
                     }
-                    mWebView.loadUrl(blogurl);
-                    break;
-                }
-            }
+                });
+        builder.setPositiveButton("아니오",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mAdView.setVisibility(View.VISIBLE);
+                        //아니오 눌렀을때의 이벤트 처리
+                    }
+                });
+        builder.show();
+    }
 
+    void rewordTime() {
+
+        long now = System.currentTimeMillis();
+        Date dateNow = new Date(now);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        rewordtime=dateFormat.format(dateNow);;
+        savePreferences(rewordtime);
+        System.out.println("savwtime="+rewordtime);
+
+    }
+
+
+    public void settingact(View view) {     //세팅버튼 클릭시 이동
+
+        closewallet();
+        deleteDialog();     //광고보고 배너 없앨건지 물음
+
+
+  /*
+        ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            //권한이 없을 경우 최초 권한 요청 또는 사용자에 의한 재요청 확인
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION) &&
+                    ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                // 권한 재요청
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+                return;
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+                return;
+            }
+        }else{
+            Toast.makeText(context,"현재 GPS가 켜져 있습니다.",Toast.LENGTH_SHORT).show();
 
         }
 
+        Intent intent1 = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivity(intent1);
 
 
+
+        if(subscribe==0) {
+            subscribe = 1;
+            System.out.println("subscribe=1로 바꿈");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("ALL");
+            FirebaseMessaging.getInstance().subscribeToTopic("1");
+        }else{
+            subscribe=0;
+            System.out.println("subscribe=0으로 바꿈");
+            FirebaseMessaging.getInstance().unsubscribeFromTopic("1");
+            FirebaseMessaging.getInstance().subscribeToTopic("ALL");
+        }
+
+        FirebaseMessaging.getInstance().unsubscribeFromTopic("ALL");
+        FirebaseMessaging.getInstance().subscribeToTopic("1");
+
+        Intent intent = new Intent();
+        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.fromParts("package", getPackageName(), null));
+        startActivity(intent);
+*/
     }
 
 

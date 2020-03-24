@@ -25,6 +25,7 @@
             android:layout_height="match_parent"
             android:layout_above="@+id/adView" />
 
+
         <com.google.android.gms.ads.AdView
             xmlns:ads="http://schemas.android.com/apk/res-auto"
             android:id="@+id/adView"
@@ -33,43 +34,114 @@
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
             ads:adSize="BANNER"
-            ads:adUnitId="ca-app-pub-7742126992195898/3504092909">
+            ads:adUnitId="ca-app-pub-3940256099942544/6300978111">
         </com.google.android.gms.ads.AdView>
 
         <ImageButton
             android:id="@+id/renew"
-            android:layout_gravity="end"
-            android:layout_marginBottom="5dp"
-            android:layout_marginEnd="3dp"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-
-            android:layout_alignParentBottom="true"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="55dp"
+            android:background="#00000000"
 
-            android:src="@drawable/renew"
             android:onClick="reflash"
-            android:padding="0dp"
-
-            android:scaleType="centerInside"
-            tools:ignore="NotSibling"  />
+            android:scaleType="fitXY"
+            android:src="@drawable/renew" />
 
 
         <ImageButton
-            android:id="@+id/home"
+            android:id="@+id/box"
             android:layout_gravity="bottom|start"
-            android:layout_marginBottom="5dp"
+            android:background="#00000000"
+            android:layout_marginBottom="50dp"
             android:layout_marginStart="4dp"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentStart="true"
-            android:src="@drawable/hombtn"
-            android:onClick="home"
+            android:src="@drawable/boxbtn"
+            android:onClick="box"
             android:padding="0dp"
-
             android:scaleType="centerInside"
             tools:ignore="NotSibling" />
+
+
+
+        <RelativeLayout
+            android:visibility="invisible"
+            android:id="@+id/homelayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/box"
+            android:layout_marginBottom="10dp"
+            android:layout_marginStart="4dp">
+
+        <ImageButton
+            android:visibility="visible"
+            android:id="@+id/home"
+            android:background="#00000000"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/hombtn"
+            android:onClick="home"
+            android:scaleType="centerInside"
+            tools:ignore="NotSibling" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/home"
+            android:text="메인화면"
+            android:layout_marginLeft="5dp"
+            android:textSize="15dp"
+            android:textStyle="bold"
+            android:layout_centerVertical="true"
+            />
+
+        </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:visibility="invisible"
+        android:id="@+id/setlayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/homelayout"
+        android:layout_marginBottom="10dp"
+        android:layout_marginStart="4dp">
+
+        <ImageButton
+            android:id="@+id/setting"
+            android:background="#00000000"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/setbtn"
+            android:onClick="settingact"
+            android:visibility="visible"
+            android:padding="0dp"
+            android:scaleType="centerInside"
+            tools:ignore="NotSibling" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@id/setting"
+            android:text="광고 지우기"
+            android:layout_marginLeft="5dp"
+            android:textSize="15dp"
+            android:textStyle="bold"
+            android:layout_centerVertical="true"
+            />
+
+
+    </RelativeLayout>
+
+
+
     </RelativeLayout>
 <!--
 
